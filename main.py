@@ -49,13 +49,13 @@ async def recv_message(message: types.Message):
 async def process_test(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['name'] = message.text
-        if make_dir(data['name']):
+        if make_dir('files/'+data['name']):
             await bot.send_message(message.chat.id, "Directory was created successfuly!")
         else:
             await bot.send_message(message.chat.id, "Directory name is invalid!")
 
         global active_dir_path
-        active_dir_path = PATH+'/'+data['name']
+        active_dir_path = PATH+'/'+'files/'+data['name']
 
         await Form.next()
         await message.reply("Send me a SAM file :^)")
