@@ -97,12 +97,16 @@ async def process_test(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['HASH'] = message.text
         print(data['HASH'])
-        await bot.send_message(message.chat.id, "Starting bruteForse!")
-        #system(f"cracken.sh {data['HASH']}")
+        await bot.send_message(message.chat.id, "Brute force started!")
+        system(f"./cracken.sh {data['HASH']} {active_dir_path}/result.txt")
+
+        await bot.send_message(message.chat.id, "Check result!")
+        with open(f"{active_dir_path}/result.txt", "r") as r:
+            text = r.readlines()
+            await bot.send_message(message.chat.id, text[0])
  
     await state.finish()
 
 
 if __name__ == "__main__":
     executor.start_polling(dp)
-
