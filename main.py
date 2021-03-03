@@ -9,6 +9,7 @@ from aiogram.dispatcher.filters import Text
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from os import mkdir, getcwd, system
 import urllib
+from loguru import logger
 
 from config import TOKEN
 PATH = getcwd()
@@ -17,6 +18,7 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
+logger.add("debug.json", format="{time} {level} {message}", level="INFO", rotation="5 MB", compression="zip", serialize=True)
 
 def make_dir(dirname):
     try:
@@ -36,11 +38,11 @@ class Form(StatesGroup):
 
 @dp.message_handler(commands=['start','help'])
 async def start_procces(msg:types.Message):
-    await bot.send_message(msg.chat.id, "Test")
-    f = open("test.txt","rb")
-    await bot.send_document(msg.chat.id,f)
+    await bot.send_message(msg.chat.id, "Hello, this bot was created for automatic brutforce Windows hashes")
+    #f = open("test.txt","rb")
+    #await bot.send_document(msg.chat.id,f)
 
-@dp.message_handler(commands=['sm'])
+@dp.message_handler(commands=['brute'])
 async def recv_message(message: types.Message):
     await Form.name.set()
     await message.reply("Выберите название папки для проекта (без пробелов кавычек и прочего)")
@@ -56,6 +58,7 @@ async def process_test(message: types.Message, state: FSMContext):
 
         global active_dir_path
         active_dir_path = PATH+'/'+'files/'+data['name']
+        logger.info("WHOIS DIR : "+str(message.chat.id)+'\n'+str(message.chat.username)+'\n'+active_dir_path)
 
         await Form.next()
         await message.reply("Send me a SAM file :^)")
@@ -85,8 +88,8 @@ async def process_SYSTEM(message: types.Message, state:FSMContext):
         urllib.request.urlretrieve(f'https://api.telegram.org/file/bot{TOKEN}/{fi}',f'{active_dir_path}/{name}')
         await bot.send_message(message.from_user.id, f'Файл SYSTEM успешно сохранён {active_dir_path}/{name}')
         await bot.send_message(message.from_user.id, "Вынятые хеши с файлов:")
-        system(f'python3 secretsdump.py -sam {active_dir_path}/SAM -system {active_dir_path}/SYSTEM LOCAL >> {active_dir_path}/hashes_out')
-        with open(f"{active_dir_path}/hashes_out","rb") as f:
+        system(f'python3 secretsdump.py -sam {active_dir_path}/SAM -system {active_dir_path}/SYSTEM LOCAL >> {active_dir_path}/hashes_out.txt')
+        with open(f"{active_dir_path}/hashes_out.txt","rb") as f:
             await bot.send_document(message.chat.id,f)
             await bot.send_message(message.chat.id,"Отправьте 1 хеш с файла")
 
@@ -98,6 +101,8 @@ async def process_test(message: types.Message, state: FSMContext):
         data['HASH'] = message.text
         print(data['HASH'])
         await bot.send_message(message.chat.id, "Brute force started!")
+        info = [data['name'], data['SAM'], data['SYSTEM'], data['HASH']]
+        logger.info("WHOIS : "+str(info)+'\n'+active_dir_path)
         system(f"./cracken.sh {data['HASH']} {active_dir_path}/result.txt")
 
         await bot.send_message(message.chat.id, "Check result!")
