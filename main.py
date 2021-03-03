@@ -31,6 +31,7 @@ class Form(StatesGroup):
     name = State()
     SAM = State()
     SYSTEM = State()
+    HASH = State()
 
 
 @dp.message_handler(commands=['start','help'])
@@ -60,38 +61,46 @@ async def process_test(message: types.Message, state: FSMContext):
         await message.reply("Send me a SAM file :^)")
 
 @dp.message_handler(lambda message: message.document.file_name == "SAM",content_types=['document'], state=Form.SAM)
-async def process_SAM(message: types.Message):
-    document_id = message.document.file_id
-    file_info = await bot.get_file(document_id)
-    fi = file_info.file_path
-    name = message.document.file_name
-    urllib.request.urlretrieve(f'https://api.telegram.org/file/bot{TOKEN}/{fi}',f'{active_dir_path}/{name}')
-    await bot.send_message(message.from_user.id, f'DEBUG: Файл SAM успешно сохранён {active_dir_path}/{name}')
-
+async def process_SAM(message: types.Message, state:FSMContext):
+    async with state.proxy() as data:
+        data['SAM'] = True
+        document_id = message.document.file_id
+        file_info = await bot.get_file(document_id)
+        fi = file_info.file_path
+        name = message.document.file_name
+        urllib.request.urlretrieve(f'https://api.telegram.org/file/bot{TOKEN}/{fi}',f'{active_dir_path}/{name}')
+        await bot.send_message(message.from_user.id, f'DEBUG: Файл SAM успешно сохранён {active_dir_path}/{name}')
 
     await Form.next()
     await message.reply("Ok, SAM was uploaded\nNext, send me a SYSTEM file :^)")
 
 @dp.message_handler(lambda message: message.document.file_name == "SYSTEM",content_types=['document'], state=Form.SYSTEM)
-async def process_SYSTEM(message: types.Message):#state: FSMContext:
-    #async with state.proxy() as data:
-    #data['SAM'] = True
-    #print(data['name'])
-    #print(data['SAM'])
-    document_id = message.document.file_id
-    file_info = await bot.get_file(document_id)
-    fi = file_info.file_path
-    name = message.document.file_name
-    urllib.request.urlretrieve(f'https://api.telegram.org/file/bot{TOKEN}/{fi}',f'{active_dir_path}/{name}')
-    await bot.send_message(message.from_user.id, f'Файл SYSTEM успешно сохранён {active_dir_path}/{name}\nНачинаю брутфорс')
-    await bot.send_message(message.from_user.id, "Пришлите хеш 1 определённой учётки")
-    system('python2 samdum.py >> hashes_out')
-    with open("hashes_out", "r") as f:
-        print(f.readlines())
+async def process_SYSTEM(message: types.Message, state:FSMContext):
+    async with state.proxy() as data:
+        data['SYSTEM'] = True
+        document_id = message.document.file_id
+        file_info = await bot.get_file(document_id)
+        fi = file_info.file_path
+        name = message.document.file_name
+        urllib.request.urlretrieve(f'https://api.telegram.org/file/bot{TOKEN}/{fi}',f'{active_dir_path}/{name}')
+        await bot.send_message(message.from_user.id, f'Файл SYSTEM успешно сохранён {active_dir_path}/{name}')
+        await bot.send_message(message.from_user.id, "Вынятые хеши с файлов:")
+        system(f'python3 secretsdump.py -sam {active_dir_path}/SAM -system {active_dir_path}/SYSTEM LOCAL >> {active_dir_path}/hashes_out')
+        with open(f"{active_dir_path}/hashes_out","rb") as f:
+            await bot.send_document(message.chat.id,f)
+            await bot.send_message(message.chat.id,"Отправьте 1 хеш с файла")
 
+    await Form.next()
 
-
-    #await Form.next()  finish?
+@dp.message_handler(state=Form.HASH)
+async def process_test(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['HASH'] = message.text
+        print(data['HASH'])
+        await bot.send_message(message.chat.id, "Starting bruteForse!")
+        #system(f"cracken.sh {data['HASH']}")
+ 
+    await state.finish()
 
 
 if __name__ == "__main__":
