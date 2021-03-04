@@ -79,6 +79,7 @@ async def process_test(message: types.Message, state: FSMContext):
         data['user_id'] = message.text
         id = int(data['user_id'])
         add_user(id)
+        await state.finish()
 
 @dp.message_handler(commands=['brute'])
 async def recv_message(message: types.Message):
@@ -90,6 +91,7 @@ async def process_test(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         if db_checker(message.chat.id) == False:
             await bot.send_message(message.chat.id, "I didn`t know who are u...\n-_-")
+            logger.error("ILLEGAL ACCES:"+str(message.chat.id)+'\n'+str(message.chat.username)+'\n')
             await state.finish()
         else:
             data['name'] = message.text
