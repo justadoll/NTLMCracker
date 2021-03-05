@@ -151,8 +151,11 @@ async def process_test(message: types.Message, state: FSMContext):
 
         await bot.send_message(message.chat.id, "Check result!")
         with open(f"{active_dir_path}/result.txt", "r") as r:
-            text = r.readlines()
-            await bot.send_message(message.chat.id, text[0])
+            try:
+                text = r.readlines()
+                await bot.send_message(message.chat.id, text[0])
+            except Exception as e:
+                await bot.send_message(message.chat.id, "Хеш не найден :(")
  
     await state.finish()
 
