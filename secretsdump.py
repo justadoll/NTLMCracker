@@ -210,7 +210,6 @@ class DumpSecrets:
                 pass
 
     def cleanup(self):
-        logging.info('Cleaning up... ')
         if self.__remoteOps:
             self.__remoteOps.finish()
         if self.__SAMHashes:
@@ -228,7 +227,7 @@ if __name__ == '__main__':
         # Output is redirected to a file
         sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
-    print(version.BANNER)
+    #print(version.BANNER)
 
     parser = argparse.ArgumentParser(add_help = True, description = "Performs various techniques to dump secrets from "
                                                       "the remote machine without executing any agent there.")
@@ -288,7 +287,7 @@ if __name__ == '__main__':
     options = parser.parse_args()
 
     # Init the example's logger theme
-    logger.init(options.ts)
+    #logger.init(options.ts)
 
     if options.debug is True:
         logging.getLogger().setLevel(logging.DEBUG)

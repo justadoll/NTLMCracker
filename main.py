@@ -133,9 +133,16 @@ async def process_SYSTEM(message: types.Message, state:FSMContext):
         await bot.send_message(message.from_user.id, f'Файл SYSTEM успешно сохранён {active_dir_path}/{name}')
         await bot.send_message(message.from_user.id, "Вынятые хеши с файлов:")
         system(f'python3 secretsdump.py -sam {active_dir_path}/SAM -system {active_dir_path}/SYSTEM LOCAL >> {active_dir_path}/hashes_out.txt')
-        with open(f"{active_dir_path}/hashes_out.txt","rb") as f:
-            await bot.send_document(message.chat.id,f)
-            await bot.send_message(message.chat.id,"Отправьте 1 хеш с файла")
+        with open(f"{active_dir_path}/hashes_out.txt", "r",encoding="utf-8") as f:
+            for line in f:
+                lines = line.split(":")
+                name = lines[0]
+                ha = lines[3]
+                await bot.send_message(message.chat.id, name)
+                await bot.send_message(message.chat.id, ha)
+                #with open(f"{active_dir_path}/hashes_out.txt","rb") as f:
+            #await bot.send_document(message.chat.id,f)
+            await bot.send_message(message.chat.id,"Отправьте 1 хеш")
 
     await Form.next()
 
