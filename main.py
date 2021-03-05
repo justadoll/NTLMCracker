@@ -89,8 +89,12 @@ async def process_test(message: types.Message, state: FSMContext):
 
 @dp.message_handler(commands=['just_hash'])
 async def process_try_hash(message: types.Message):
-    await bot.send_message(message.chat.id, "Скиньте только хеш")
-    await Hash.HASH.set()
+    if db_checker(message.chat.id) == False:
+        await bot.send_message(message.chat.id, "I didn`t know who are u...\n-_-")
+        logger.error("ILLEGAL ACCES:"+str(message.chat.id)+'\n'+str(message.chat.username)+'\n')
+    else:
+        await bot.send_message(message.chat.id, "Скиньте только хеш")
+        await Hash.HASH.set()
 
 
 @dp.message_handler(state=Hash.HASH)
