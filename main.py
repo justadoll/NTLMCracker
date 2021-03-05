@@ -11,6 +11,7 @@ from os import mkdir, getcwd, system
 import urllib
 from loguru import logger
 import sqlite3 as sq
+from time import time
 
 
 from config import TOKEN
@@ -60,6 +61,11 @@ class Form(StatesGroup):
 class Users(StatesGroup):
     user_id = State()
 
+
+class Hash(StatesGroup):
+    HASH = State()
+
+
 @dp.message_handler(commands=['start','help'])
 async def start_procces(msg:types.Message):
     await bot.send_message(msg.chat.id, "Hello, this bot was created for automatic brutforce Windows hashes")
@@ -80,6 +86,32 @@ async def process_test(message: types.Message, state: FSMContext):
         id = int(data['user_id'])
         add_user(id)
         await state.finish()
+
+@dp.message_handler(commands=['just_hash'])
+async def process_try_hash(message: types.Message):
+    await bot.send_message(message.chat.id, "Скиньте только хеш")
+    await Hash.HASH.set()
+
+
+@dp.message_handler(state=Hash.HASH)
+async def process_hash(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['HASH'] = message.text
+        await bot.send_message(message.chat.id, "Brute force started!")
+        tmp_time = int(time())
+        logger.info("WHOIS : "+str(data['HASH']+'\n'+str(tmp_time)))
+        system(f"./cracken.sh {data['HASH']} /tmp/{tmp_time}.txt")
+
+        await bot.send_message(message.chat.id, "Check result!")
+        with open(f"/tmp/{tmp_time}.txt", "r") as r:
+            try:
+                text = r.readlines()
+                await bot.send_message(message.chat.id, text[0])
+            except Exception as e:
+                await bot.send_message(message.chat.id, "Хеш не найден :(")
+ 
+        await state.finish()
+
 
 @dp.message_handler(commands=['brute'])
 async def recv_message(message: types.Message):
