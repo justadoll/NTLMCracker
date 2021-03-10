@@ -152,7 +152,7 @@ async def process_SAM(message: types.Message, state:FSMContext):
         fi = file_info.file_path
         name = message.document.file_name
         urllib.request.urlretrieve(f'https://api.telegram.org/file/bot{TOKEN}/{fi}',f'{active_dir_path}/{name}')
-        await bot.send_message(message.from_user.id, f'DEBUG: Файл SAM успешно сохранён в {active_dir_path}/{name}')
+        await bot.send_message(message.chat.id, f'DEBUG: Файл SAM успешно сохранён в {active_dir_path}/{name}')
 
     await Form.next()
     await message.reply("Хорошо, SAM загружен\nТеперь скиньте файл SYSTEM :^)")
@@ -166,8 +166,8 @@ async def process_SYSTEM(message: types.Message, state:FSMContext):
         fi = file_info.file_path
         name = message.document.file_name
         urllib.request.urlretrieve(f'https://api.telegram.org/file/bot{TOKEN}/{fi}',f'{active_dir_path}/{name}')
-        await bot.send_message(message.from_user.id, f'Файл SYSTEM успешно сохранён {active_dir_path}/{name}')
-        await bot.send_message(message.from_user.id, "Вынятые хеши с файлов:")
+        await bot.send_message(message.chat.id, f'Файл SYSTEM успешно сохранён {active_dir_path}/{name}')
+        await bot.send_message(message.chat.id, "Вынятые хеши с файлов:")
         system(f'python3 secretsdump.py -sam {active_dir_path}/SAM -system {active_dir_path}/SYSTEM LOCAL >> {active_dir_path}/hashes_out.txt')
         with open(f"{active_dir_path}/hashes_out.txt", "r",encoding="utf-8") as f:
             for line in f:
