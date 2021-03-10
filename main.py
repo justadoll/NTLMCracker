@@ -66,6 +66,11 @@ class Hash(StatesGroup):
     HASH = State()
 
 
+class John(StatesGroup):
+    name_dir = State()
+    hash = State()
+
+
 @dp.message_handler(commands=['start','help'])
 async def start_procces(msg:types.Message):
     await bot.send_message(msg.chat.id, "Hello, this bot was created for automatic brutforce Windows hashes")
@@ -87,6 +92,43 @@ async def process_test(message: types.Message, state: FSMContext):
         add_user(id)
         await state.finish()
 
+@dp.message_handler(commands=["tg_loco"])
+async def process_tg_loco(message: types.Message):
+    if db_checker(message.chat.id) == True:
+        await John.name_dir.set()
+        await message.reply("Выберите название папки для проекта (без пробелов кавычек и прочего)")
+    else:
+        await bot.send_message(message.chat.id, "I didn`t know who are u...\n-_-")
+        logger.error("ILLEGAL ACCES:"+str(message.chat.id)+'\n'+str(message.chat.username)+'\n')
+
+@dp.message_handler(state=John.name_dir)
+async def process_john(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['name_dir'] = message.text
+        if make_dir('files/tg_local/'+data['name_dir']):
+            await bot.send_message(message.chat.id, "Папка была создана успешно!")
+            await John.next()
+            # BOLD
+            await message.reply("Пришлите файл с хешем телеграма\nПример:\n$telegram$2*100000*a0ad816dfa35307efd3e3053a6077e9d2fa3e3ad9d703686750a998718c23b59*1127f695e267fd5e7a9b581995e7a6de5a5d1b3144e6572b780e8689b5e176b3e0c55f54edd41e2931d876af8c9585fb5757b9987323e8f7abcbc4f49ced2a0463f710292eaaddcf759c19f9c63f249a227fce492adc8509c5c66c8cb470965496863e17452ea46c759ba0524029f493cfa1e6878314db745b1bb9924e415e658a2d33a7cab2ba9ea1c0923bbf6e75666f245be4ac39780326d80a8e2bc479e043e7a530c56c73167eabb5858f011199c03c64124daff6016a0ce3cf280d9c195da7ef9ebf1ffad52e336d292c3e2174b8e00b5554caf853a32d6cc2bdb8fee18bd37358dcfd3565649d494a8b027f6083f8e4e42b3f438987321bbe0bcea13f0fb864c3a782431e132207f508e76b6a9768416ee015a2ad89c7cc620b2cb1fe")
+        else:
+            await bot.send_message(message.chat.id,"Название папки не подходит.\nHапишите /tg_loco и попробуйте ещё раз")
+            await state.finish()
+
+
+@dp.message_handler(content_types=['document'], state=John.hash)
+async def process_John_hash(message: types.Message, state:FSMContext):
+    async with state.proxy() as data:
+        data['hash'] = True
+        document_id = message.document.file_id
+        file_info = await bot.get_file(document_id)
+        fi = file_info.file_path
+        name = message.document.file_name
+        hash_path = 'files/tg_local/'+data['name_dir']
+        urllib.request.urlretrieve(f'https://api.telegram.org/file/bot{TOKEN}/{fi}',f"{hash_path}/{name}")
+        await bot.send_message(message.from_user.id, f'Hash файл успешно сохранён {hash_path}/{name}')
+        system(f"./cracken.sh john_tg {hash_path}/{name} {hash_path}/result.txt")
+
+
 @dp.message_handler(commands=['just_hash'])
 async def process_try_hash(message: types.Message):
     if db_checker(message.chat.id) == False:
@@ -104,7 +146,7 @@ async def process_hash(message: types.Message, state: FSMContext):
         await bot.send_message(message.chat.id, "Brute force started!")
         tmp_time = int(time())
         logger.info("WHOIS : "+str(data['HASH']+'\n'+str(tmp_time)))
-        system(f"./cracken.sh {data['HASH']} /tmp/{tmp_time}.txt")
+        system(f"./cracken.sh cat_win {data['HASH']} /tmp/{tmp_time}.txt")
 
         await bot.send_message(message.chat.id, "Check result!")
         with open(f"/tmp/{tmp_time}.txt", "r") as r:
@@ -190,7 +232,7 @@ async def process_test(message: types.Message, state: FSMContext):
         await bot.send_message(message.chat.id, "Brute force started!")
         info = [data['name'], data['SAM'], data['SYSTEM'], data['HASH']]
         logger.info("WHOIS : "+str(info)+'\n'+active_dir_path)
-        system(f"./cracken.sh {data['HASH']} {active_dir_path}/result.txt")
+        system(f"./cracken.sh cat_win {data['HASH']} {active_dir_path}/result.txt")
 
         await bot.send_message(message.chat.id, "Check result!")
         with open(f"{active_dir_path}/result.txt", "r") as r:
