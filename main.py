@@ -88,9 +88,16 @@ async def process_add(message: types.Message):
 async def process_test(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['user_id'] = message.text
-        id = int(data['user_id'])
-        add_user(id)
-        await state.finish()
+        try:
+            id = int(data['user_id'])
+            add_user(id)
+        except ValueError:
+            await bot.send_message(message.chat.id, "Something wrong, try something else")
+            await state.finish()
+        else:
+            await bot.send_message(message.chat.id, "User was added!")
+            await state.finish()
+
 
 @dp.message_handler(commands=["tg_loco"])
 async def process_tg_loco(message: types.Message):
@@ -125,8 +132,12 @@ async def process_John_hash(message: types.Message, state:FSMContext):
         name = message.document.file_name
         hash_path = 'files/tg_local/'+data['name_dir']
         urllib.request.urlretrieve(f'https://api.telegram.org/file/bot{TOKEN}/{fi}',f"{hash_path}/{name}")
-        await bot.send_message(message.from_user.id, f'Hash файл успешно сохранён {hash_path}/{name}')
+        await bot.send_message(message.from_user.id, f'Hash файл успешно сохранён {hash_path}/{name}.\nНачинаю брутфорс!')
         system(f"./cracken.sh john_tg {hash_path}/{name} {hash_path}/result.txt")
+        with open(f"{hash_path}/result.txt","r",encoding="utf-8") as f:
+            line = f.readline()
+            await bot.send_message(message.chat.id, str(line.split(":")[1]))
+            
 
 
 @dp.message_handler(commands=['just_hash'])
