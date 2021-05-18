@@ -7,18 +7,21 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.bot.api import TelegramAPIServer
+from aiogram.types import ContentType
 from os import mkdir, getcwd, system
+from shutil import copyfile
 import urllib
 from loguru import logger
 import sqlite3 as sq
 from time import time
 
-
 from config import TOKEN
-PATH = getcwd()
-#logging.basicConfig(level=logging.INFO)
 
-bot = Bot(token=TOKEN)
+PATH = getcwd()
+
+local_server = TelegramAPIServer.from_base('http://127.0.0.1:8081')
+bot = Bot(token=TOKEN,server=local_server)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 logger.add("debug.json", format="{time} {level} {message}", level="INFO", rotation="5 MB", compression="zip", serialize=True)
@@ -204,8 +207,12 @@ async def process_SAM(message: types.Message, state:FSMContext):
         file_info = await bot.get_file(document_id)
         fi = file_info.file_path
         name = message.document.file_name
-        urllib.request.urlretrieve(f'https://api.telegram.org/file/bot{TOKEN}/{fi}',f'{active_dir_path}/{name}')
-        await bot.send_message(message.chat.id, f'DEBUG: Файл SAM успешно сохранён в {active_dir_path}/{name}')
+        logger.debug(f"doc_id:{document_id} fi:{fi} name:{name}")
+        pwdf = f"{active_dir_path}/{name}"
+        dest = copyfile(fi,pwdf)
+        logger.debug(f"SAM file destenation : {dest}")
+        #await bot.download_file(fi,pwdf)
+        await bot.send_message(message.chat.id, f'DEBUG: Файл SAM успешно сохранён в {dest}')
 
     await Form.next()
     await message.reply("Хорошо, SAM загружен\nТеперь скиньте файл SYSTEM :^)")
@@ -218,8 +225,13 @@ async def process_SYSTEM(message: types.Message, state:FSMContext):
         file_info = await bot.get_file(document_id)
         fi = file_info.file_path
         name = message.document.file_name
-        urllib.request.urlretrieve(f'https://api.telegram.org/file/bot{TOKEN}/{fi}',f'{active_dir_path}/{name}')
-        await bot.send_message(message.chat.id, f'Файл SYSTEM успешно сохранён {active_dir_path}/{name}')
+        pwdf = f"{active_dir_path}/{name}"
+        logger.debug(f"doc_id:{document_id} fi:{fi} name:{name} pwdf:{pwdf}")
+        dest = copyfile(fi,pwdf)
+        logger.debug(f"SYSTEM file destenation : {dest}")
+        #await bot.download_file(fi,pwdf)
+
+        await bot.send_message(message.chat.id, f'Файл SYSTEM успешно сохранён {dest}')
         await bot.send_message(message.chat.id, "Вынятые хеши с файлов:")
         system(f'python3 secretsdump.py -sam {active_dir_path}/SAM -system {active_dir_path}/SYSTEM LOCAL >> {active_dir_path}/hashes_out.txt')
         with open(f"{active_dir_path}/hashes_out.txt", "r",encoding="utf-8") as f:
