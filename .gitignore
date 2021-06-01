@@ -1,3 +1,9 @@
 config.py
 db.db
-words/newOneFile.txt
+__pycache__/
+debug.json
+files/
+john-bleeding-jumbo/
+ntlmhash3.py
+telegram-bot-api-start.sh
+words/all.txt
